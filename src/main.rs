@@ -27,7 +27,7 @@ impl EventHandler for Handler {
                         top_p: Some(0.95),
                         candidate_count: Some(1),
                         ..Default::default()
-                    },
+                    }
                 }))
                 .build();
 
@@ -42,7 +42,7 @@ impl EventHandler for Handler {
                 if chunk.len() < 2000 {
                     chunk.push(char);
                 } else {
-                    if let Err(why) = msg.channel_id.say(&ctx.http, chunk.as_str()).await {
+                    if let Err(why) = msg.reply(&ctx.http, chunk.as_str()).await {
                         println!("Error sending message: {why:?}.");
                         break;
                     }
@@ -50,7 +50,7 @@ impl EventHandler for Handler {
                 }
             }
             if !chunk.is_empty() {
-                msg.channel_id.say(&ctx.http, chunk.as_str()).await.ok();
+                msg.reply(&ctx.http, chunk.as_str()).await.ok();
             }
         }
     }
