@@ -8,14 +8,9 @@ use rig::completion::Prompt;
 use rig::prelude::*;
 use rig::providers::gemini;
 use rig::providers::gemini::completion::gemini_api_types::GenerationConfig;
-use serde::Serialize;
+use serde_json::json;
 
 struct Handler;
-
-#[derive(Serialize)]
-struct Params {
-    generationConfig: GenerationConfig,
-}
 
 #[async_trait]
 impl EventHandler for Handler {
@@ -25,29 +20,37 @@ impl EventHandler for Handler {
             let gemini_client = gemini::Client::from_env();
             let agent = gemini_client
                 .agent(gemini::completion::GEMINI_2_5_FLASH_PREVIEW_05_20)
-                .preamble("Be creative and concise. Answer directly and clearly.")
-                .temperature(0.5)
-                .additional_params(
-                    serde_json::to_value(Params {
-                        generationConfig: GenerationConfig {
-                            top_k: Some(1),
-                            top_p: Some(0.95),
-                            candidate_count: Some(1),
-                            ..Default::default()
-                        },
-                    })
-                    .unwrap(),
-                )
+                .preamble("Answer concisely, directly and clearly.")
+                .additional_params(json!({
+                    "generationConfig": GenerationConfig {
+                        top_k: Some(1),
+                        top_p: Some(0.95),
+                        candidate_count: Some(1),
+                        ..Default::default()
+                    },
+                }))
                 .build();
 
             let prompt = msg.content.replace(mention.as_str(), "");
             let response = match agent.prompt(prompt).await {
-                Ok(r) => r,
+                Ok(response) => response,
                 Err(why) => return println!("Error prompting Gemini: {why:?}."),
             };
 
-            if let Err(why) = msg.channel_id.say(&ctx.http, response).await {
-                println!("Error sending message: {why:?}.");
+            let mut chunk = String::new();
+            for char in response.chars() {
+                if chunk.len() < 2000 {
+                    chunk.push(char);
+                } else {
+                    if let Err(why) = msg.channel_id.say(&ctx.http, chunk.as_str()).await {
+                        println!("Error sending message: {why:?}.");
+                        break;
+                    }
+                    chunk.clear();
+                }
+            }
+            if !chunk.is_empty() {
+                msg.channel_id.say(&ctx.http, chunk.as_str()).await.ok();
             }
         }
     }
