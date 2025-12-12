@@ -29,9 +29,8 @@ impl EventHandler for Handler {
 
             let mut chunk = String::new();
             for char in response.chars() {
-                if chunk.len() < 2000 {
-                    chunk.push(char);
-                } else {
+                chunk.push(char);
+                if chunk.len() >= 2000 {
                     if let Err(why) = msg.reply(&ctx.http, chunk.as_str()).await {
                         println!("Error sending message: {why:?}.");
                         break;
@@ -48,7 +47,7 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
-    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment.");
+    let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN environment variable not set.");
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
