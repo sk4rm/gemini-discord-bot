@@ -7,8 +7,6 @@ use serenity::prelude::*;
 use rig::completion::Prompt;
 use rig::prelude::*;
 use rig::providers::gemini;
-use rig::providers::gemini::completion::gemini_api_types::GenerationConfig;
-use serde_json::json;
 
 struct Handler;
 
@@ -19,16 +17,8 @@ impl EventHandler for Handler {
         if msg.content.contains(mention.as_str()) {
             let gemini_client = gemini::Client::from_env();
             let agent = gemini_client
-                .agent(gemini::completion::GEMINI_2_5_FLASH_PREVIEW_05_20)
+                .agent(gemini::completion::GEMINI_2_5_FLASH)
                 .preamble("Answer concisely, directly and clearly.")
-                .additional_params(json!({
-                    "generationConfig": GenerationConfig {
-                        top_k: Some(1),
-                        top_p: Some(0.95),
-                        candidate_count: Some(1),
-                        ..Default::default()
-                    }
-                }))
                 .build();
 
             let prompt = msg.content.replace(mention.as_str(), "");
